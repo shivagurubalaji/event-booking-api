@@ -7,7 +7,7 @@ services:
     container_name: laravel-app
     working_dir: /var/www/html
     volumes:
-      - ./src:/var/www/html
+      - ./src/laravel:/var/www/html
     env_file:
       - .env
     networks:
