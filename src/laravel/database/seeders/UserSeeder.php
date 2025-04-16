@@ -11,7 +11,7 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::create([
+        $user = User::create([
             'id' => Str::orderedUuid(),
             'name' => 'Shiva',
             'email' => 'shivagurubalaji@gmail.com',
@@ -19,5 +19,8 @@ class UserSeeder extends Seeder
             'role' => 'admin',
         ]);
 
+        $token = $user->createToken('admin-token')->plainTextToken;
+
+        echo "Sanctum token for {$user->email}: $token\n";
     }
 }
