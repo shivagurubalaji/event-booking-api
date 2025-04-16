@@ -12,3 +12,8 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('events/{event}/attendees', [AttendeeController::class, 'store']);
+
+Route::get('/ping', function () {
+    return response()->json(['message' => 'pong']);
+});
+
