@@ -2,10 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 
 class Attendee extends Model
 {
+
+    protected static function booted()
+    {
+        static::creating(function ($attendee) {
+            $attendee->id = Str::uuid()->toString();
+        });
+    }
 
     protected $fillable = [
         'event_id',
