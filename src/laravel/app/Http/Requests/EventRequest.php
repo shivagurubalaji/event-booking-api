@@ -57,7 +57,7 @@ class EventRequest extends FormRequest
         throw new HttpResponseException($this->errorResponse(
             'Validation failed.',
             $validator->errors()->toArray(),
-            403
+            422
         ));
 
     }

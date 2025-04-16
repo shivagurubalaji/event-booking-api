@@ -28,7 +28,7 @@ class AttendeeController extends Controller
                     409
                 );
             }
-    
+
             // Check for overbooking
             if ($event->attendees()->count() >= $event->capacity) {
                 return $this->errorResponse(
@@ -37,12 +37,15 @@ class AttendeeController extends Controller
                     403
                 );
             }
-    
-            $attendee = $event->attendees()->create($request->validated());
 
-            return $this->successResponse($attendee, 'Attendee registered successfully.', 201);
-            
-    
+            //$attendee = $event->attendees()->create($request->validated());
+            // Store attendee with authenticated user ID
+            $attendee = $event->attendees()->create([
+                ...$request->validated(),
+                'user_id' => $request->user()->id,
+            ]);
+
+            return $this->successResponse($attendee, 'Attendee registere successfully.', 201);
         } catch (\Throwable $e) {
             // Log for debugging
             Log::error('Attendee registration failed', [
@@ -50,7 +53,7 @@ class AttendeeController extends Controller
                 'event_id' => $event->id ?? null,
                 'request' => $request->all(),
             ]);
-    
+
             return $this->errorResponse(
                 'Something went wrong while registering the attendee.',
                 ['error' => [$e->getMessage()]],
@@ -58,7 +61,7 @@ class AttendeeController extends Controller
             );
         }
     }
-    
+
 
     public function index($event)
     {
@@ -72,7 +75,6 @@ class AttendeeController extends Controller
             );
         }
         return $this->successResponse($getEvent->attendees, 'Attendees list for the event loaded.', 201);
-
     }
 
     public function show($attendee)
@@ -87,11 +89,11 @@ class AttendeeController extends Controller
                 403
             );
         }
-    
+
         return $this->successResponse($getAttendee, 'Attendee listed successfully.');
     }
 
-    public function update(StoreAttendeeRequest $request, $attendee)
+    public function update(StoreAttendeeRequest $request, $event, $attendee)
     {
         //$attendee->update($request->all());
         //return response()->json($attendee);
@@ -107,7 +109,7 @@ class AttendeeController extends Controller
         $validatedData = $request->validated();
 
         $getAttendee->update($validatedData);
-    
+
         return $this->successResponse($attendee, 'Attendee updated successfully.');
     }
 

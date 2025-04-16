@@ -9,11 +9,13 @@ Route::middleware('auth:sanctum')->group(function () {
     //Route::get('events', [EventController::class, 'index']);
     //Route::post('events', [EventController::class, 'store']);
     Route::apiResource('events', EventController::class);
-    Route::apiResource('events.attendees', AttendeeController::class)->except(['store']);
-    Route::post('events/{event}/book', [BookingController::class, 'store']);
+    Route::apiResource('events.attendees', AttendeeController::class);
+    //Route::apiResource('events.attendees', AttendeeController::class)->except(['store']);
+    //Route::post('events/{event}/attendees', [AttendeeController::class, 'store']);
+    
 });
 
-Route::post('/register/{event}/attendees', [AttendeeController::class, 'store']);
+Route::post('events/{event}/book', [BookingController::class, 'store']);
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'pong']);

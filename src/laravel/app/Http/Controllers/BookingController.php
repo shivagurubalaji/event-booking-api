@@ -6,24 +6,36 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 
+use App\Traits\StandardAPIResponse;
 class BookingController extends Controller
 {
+
+    use StandardAPIResponse;
+
+    // Event bookings directly by attendees
     public function store(Request $request, Event $event)
     {
         if ($event->attendees()->where('email', $request->email)->exists()) {
-            return response()->json(['message' => 'Already booked.'], 409);
+            return $this->errorResponse(
+                'Already booked.',
+                ['Already booked.' => ['You have already booked to this event.']],
+                403
+            );
         }
 
         if ($event->attendees()->count() >= $event->capacity) {
-            return response()->json(['message' => 'Event is fully booked.'], 403);
+            return $this->errorResponse(
+                'Event is full.',
+                ['capacity' => ['This event has reached its capacity.']],
+                403
+            );
         }
 
         $attendee = $event->attendees()->create([
-            'user_id' => $request->user()->id,
             'name' => $request->name,
             'email' => $request->email,
         ]);
 
-        return response()->json($attendee, 201);
+        return $this->successResponse($attendee, 'Attendee registere successfully.', 201);
     }
 }

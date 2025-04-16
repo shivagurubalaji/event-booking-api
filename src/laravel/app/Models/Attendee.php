@@ -23,7 +23,8 @@ class Attendee extends Model
         'name',
         'email',
         'phone',
-        'notes'
+        'notes',
+        'user_id'
     ];
 
     public function event()
