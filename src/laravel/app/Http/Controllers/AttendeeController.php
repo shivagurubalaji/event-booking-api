@@ -17,22 +17,46 @@ class AttendeeController extends Controller
 
     public function store(StoreAttendeeRequest $request, Event $event)
     {
-
-        if ($event->attendees()->where('email', $request->email)->exists()) {
-            //return response()->json(['message' => 'Already registered.'], 409);
-            return $this->errorResponse('Already registered.', ['email' => ['This attendee is already registered.']], 409);
+        try {
+            // Check for duplicate attendee
+            if ($event->attendees()->where('email', $request->email)->exists()) {
+                return $this->errorResponse(
+                    'Already registered.',
+                    ['email' => ['This attendee is already registered.']],
+                    409
+                );
+            }
+    
+            // Check for overbooking
+            if ($event->attendees()->count() >= $event->capacity) {
+                return $this->errorResponse(
+                    'Event is full.',
+                    ['capacity' => ['This event has reached its capacity.']],
+                    403
+                );
+            }
+    
+            $attendee = $event->attendees()->create($request->validated());
+            
+            return $this->successResponse($attendee, 'Attendee registered successfully.', 201);
+            
+    
+        } catch (\Throwable $e) {
+            // Log for debugging
+            \Log::error('Attendee registration failed', [
+                'error' => $e->getMessage(),
+                'event_id' => $event->id ?? null,
+                'request' => $request->all(),
+            ]);
+    
+            return $this->errorResponse(
+                'Something went wrong while registering the attendee.',
+                ['error' => [$e->getMessage()]],
+                500
+            );
         }
-
-        if ($event->attendees()->count() >= $event->capacity) {
-            return response()->json(['message' => 'Event is full.'], 403);
-        }
-
-        //dd($request->validated());
-        //dd($event->id, gettype($event->id));
-
-        $attendee = $event->attendees()->create($request->validated());
-        return response()->json($attendee, 201);
     }
+    
 
     public function index(Event $event)
     {
