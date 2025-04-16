@@ -29,4 +29,18 @@ class Event extends Model
     {
         return $this->hasMany(Attendee::class);
     }
+
+    public static function hasTimeConflict($location, $start_time, $end_time, $excludeEventId = null): bool
+    {
+        return self::where('location', $location)
+            ->when($excludeEventId, fn($query) => $query->where('id', '!=', $excludeEventId))
+            ->where(function ($query) use ($start_time, $end_time) {
+                $query->whereBetween('start_time', [$start_time, $end_time])
+                    ->orWhereBetween('end_time', [$start_time, $end_time])
+                    ->orWhere(function ($query) use ($start_time, $end_time) {
+                        $query->where('start_time', '<=', $start_time)
+                            ->where('end_time', '>=', $end_time);
+                    });
+            })->exists();
+    }
 }

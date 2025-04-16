@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAttendeeRequest;
 use App\Models\Event;
 use App\Models\Attendee;
+
 
 use App\Traits\StandardAPIResponse;
 
@@ -37,13 +39,13 @@ class AttendeeController extends Controller
             }
     
             $attendee = $event->attendees()->create($request->validated());
-            
+
             return $this->successResponse($attendee, 'Attendee registered successfully.', 201);
             
     
         } catch (\Throwable $e) {
             // Log for debugging
-            \Log::error('Attendee registration failed', [
+            Log::error('Attendee registration failed', [
                 'error' => $e->getMessage(),
                 'event_id' => $event->id ?? null,
                 'request' => $request->all(),
@@ -58,25 +60,70 @@ class AttendeeController extends Controller
     }
     
 
-    public function index(Event $event)
+    public function index($event)
     {
-        return response()->json($event->attendees);
+        //return response()->json($event->attendees);
+        $getEvent = Event::with('attendees')->find($event);
+        if (!$getEvent) {
+            return $this->errorResponse(
+                'No event found.',
+                ['Event' => ['No matching events found.']],
+                403
+            );
+        }
+        return $this->successResponse($getEvent->attendees, 'Attendees list for the event loaded.', 201);
+
     }
 
-    public function show(Event $event, Attendee $attendee)
+    public function show($attendee)
     {
-        return response()->json($attendee);
+        //return response()->json($attendee);
+        $getAttendee = Attendee::find($attendee);
+
+        if (!$getAttendee) {
+            return $this->errorResponse(
+                'No attendee found.',
+                ['Attendee' => ['No matching attendee found.']],
+                403
+            );
+        }
+    
+        return $this->successResponse($getAttendee, 'Attendee listed successfully.');
     }
 
-    public function update(Request $request, Event $event, Attendee $attendee)
+    public function update(StoreAttendeeRequest $request, $attendee)
     {
-        $attendee->update($request->all());
-        return response()->json($attendee);
+        //$attendee->update($request->all());
+        //return response()->json($attendee);
+        $getAttendee = Attendee::find($attendee);
+        if (!$getAttendee) {
+            return $this->errorResponse(
+                'No attendee found.',
+                ['Attendee' => ['No matching attendee found.']],
+                403
+            );
+        }
+
+        $validatedData = $request->validated();
+
+        $getAttendee->update($validatedData);
+    
+        return $this->successResponse($attendee, 'Attendee updated successfully.');
     }
 
-    public function destroy(Event $event, Attendee $attendee)
+    public function destroy($attendee)
     {
-        $attendee->delete();
-        return response()->json(null, 204);
+        //$attendee->delete();
+        //return response()->json(null, 204);
+        $getAttendee = Attendee::find($attendee);
+        if (!$getAttendee) {
+            return $this->errorResponse(
+                'No attendee found.',
+                ['Attendee' => ['No matching attendee found.']],
+                403
+            );
+        }
+        $getAttendee->delete();
+        return $this->successResponse("Attendee", 'Attendee deleted.');
     }
 }

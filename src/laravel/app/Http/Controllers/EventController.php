@@ -38,25 +38,18 @@ class EventController extends Controller
     public function store(EventRequest $request)
     {
         // Parse ISO 8601 datetime
-        $start_time = Carbon::parse($request->start_time)->toDateTimeString();
-        $end_time = Carbon::parse($request->end_time)->toDateTimeString();
+        //$start_time = Carbon::parse($request->start_time)->toDateTimeString();
+        //$end_time = Carbon::parse($request->end_time)->toDateTimeString();
 
         $validatedData = $request->validated();
-        $validatedData['start_time'] = $start_time;
-        $validatedData['end_time'] = $end_time;
+        $validatedData['start_time'] = Carbon::parse($request->start_time)->toDateTimeString();
+        $validatedData['end_time'] = Carbon::parse($request->end_time)->toDateTimeString();
 
-        // Check for overlapping events at the same location
-        $conflict = Event::where('location', $validatedData['location'])
-            ->where(function ($query) use ($start_time, $end_time) {
-                $query->whereBetween('start_time', [$start_time, $end_time])
-                    ->orWhereBetween('end_time', [$start_time, $end_time])
-                    ->orWhere(function ($query) use ($start_time, $end_time) {
-                        $query->where('start_time', '<=', $start_time)
-                            ->where('end_time', '>=', $end_time);
-                    });
-            })->exists();
-
-        if ($conflict) {
+        if (Event::hasTimeConflict(
+            $validatedData['location'],
+            $validatedData['start_time'],
+            $validatedData['end_time']
+        )) {
             return $this->errorResponse('An event already exists at this location and time.', 422);
         }
 
@@ -66,21 +59,63 @@ class EventController extends Controller
     }
 
     // api/events/{{event}} POST
-    public function show(Event $event)
+    public function show($event)
     {
-        $getEvent = $event->load('attendees');
+        $getEvent = Event::find($event);
+
+        if (!$getEvent) {
+            return $this->errorResponse(
+                'No event found.',
+                ['Event' => ['No matching events found.']],
+                403
+            );
+        }
+    
         return $this->successResponse($getEvent, 'Event listed successfully.');
     }
 
-    public function update(EventRequest $request, Event $event)
+    public function update(EventRequest $request, $event)
     {
-        $event->update($request->validated());
-        return response()->json($event);
+
+        $getEvent = Event::find($event);
+        if (!$getEvent) {
+            return $this->errorResponse(
+                'No event found.',
+                ['Event' => ['No matching events found.']],
+                403
+            );
+        }
+
+        $validatedData = $request->validated();
+        $validatedData['start_time'] = Carbon::parse($request->start_time)->toDateTimeString();
+        $validatedData['end_time'] = Carbon::parse($request->end_time)->toDateTimeString();
+    
+        if (Event::hasTimeConflict(
+            $validatedData['location'],
+            $validatedData['start_time'],
+            $validatedData['end_time'],
+            $getEvent->id
+        )) {
+            return $this->errorResponse('Another event already exists at this location and time.', 422);
+        }
+    
+        $getEvent->update($validatedData);
+    
+        return $this->successResponse($event, 'Event updated successfully.');
     }
 
-    public function destroy(Event $event)
+    public function destroy($event)
     {
-        $event->delete();
-        return response()->json(null, 204);
+        $getEvent = Event::find($event);
+        if (!$getEvent) {
+            return $this->errorResponse(
+                'No event found.',
+                ['Event' => ['No matching events found.']],
+                403
+            );
+        }
+        $getEvent->delete();
+        return $this->successResponse("Event", 'Event deleted.');
+        // response()->json(null, 204);
     }
 }
