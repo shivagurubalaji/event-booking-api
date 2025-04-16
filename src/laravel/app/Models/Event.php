@@ -10,6 +10,16 @@ class Event extends Model
 {
     use HasFactory, HasUuids;
 
+    protected $fillable = [
+        "event_name",
+        "event_description",
+        "location",
+        "start_time",
+        "end_time",
+        "capacity",
+        "is_public"
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
