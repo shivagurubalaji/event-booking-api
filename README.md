@@ -15,15 +15,15 @@ Event Management API designed for handling event registrations, attendee booking
 
 ---
 
-## 📦 Project Setup
+## Project Setup
 
-### 🧰 Requirements
+### Requirements
 
 - Docker installed on your machine
 
 ---
 
-### 📥 Installation Steps
+### Installation Steps
 
 1. **Clone the repository**:
 
@@ -80,7 +80,7 @@ VITE_APP_NAME="${APP_NAME}"
 
 ---
 
-### 🐳 Run Docker Containers
+### Run Docker Containers
 
 From the project **root** folder:
 
@@ -109,7 +109,7 @@ php artisan db:seed --class=UserSeeder
 
 ---
 
-### 🔐 Authentication
+### Authentication
 
 After running the seeder, a token will be printed to your console.
 
