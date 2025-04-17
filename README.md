@@ -90,7 +90,7 @@ docker-compose up -d --build
 
 ---
 
-### 🔧 Setup Laravel Inside Docker
+### Setup Laravel Inside Docker
 
 Run the following commands **one by one**:
 
@@ -121,7 +121,7 @@ Authorization: Bearer <your-token-here>
 
 ---
 
-## 📬 Base URL
+## Base URL
 
 All API requests should use:
 
