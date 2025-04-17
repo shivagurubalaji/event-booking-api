@@ -2,185 +2,80 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
+use App\Http\Requests\EventRequest;
+use App\Services\EventService;
+use App\Traits\StandardAPIResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Http\Requests\EventRequest;
-use App\Models\Event;
-
-use App\Traits\StandardAPIResponse;
 
 class EventController extends Controller
 {
     use StandardAPIResponse;
 
-    // api/events GET
+    protected EventService $eventService;
+
+    public function __construct(EventService $eventService)
+    {
+        $this->eventService = $eventService;
+    }
+
     public function index(Request $request)
     {
-
         try {
-
-            // Apply optional filters
-            $query = Event::query();
-
-            if ($request->has('location')) {
-                $query->where('location', $request->location);
-            }
-
-            // Paginate the results
-            $perPage = $request->get('per_page', 10);
-            $events = $query->paginate($perPage);
-
+            $events = $this->eventService->listEvents($request->only('location'), $request->get('per_page', 10));
             return $this->successResponse($events, 'Events listed successfully.');
         } catch (\Throwable $e) {
-
-            Log::error('EventController@index Error:', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return $this->errorResponse(
-                'Something went wrong.',
-                ['error' => [$e->getMessage()]],
-                500
-            );
+            Log::error('EventController@index Error:', ['error' => $e->getMessage()]);
+            return $this->errorResponse('Something went wrong.', ['error' => [$e->getMessage()]], 500);
         }
     }
 
-    // api/events POST
     public function store(EventRequest $request)
     {
-
         try {
-
-            $validatedData = $request->validated();
-            $validatedData['start_time'] = Carbon::parse($request->start_time)->toDateTimeString();
-            $validatedData['end_time'] = Carbon::parse($request->end_time)->toDateTimeString();
-
-            if (Event::hasTimeConflict(
-                $validatedData['location'],
-                $validatedData['start_time'],
-                $validatedData['end_time']
-            )) {
-                return $this->errorResponse('An event already exists at this location and time.', 422);
-            }
-
-            $event = $request->user()->events()->create($validatedData);
-
+            $event = $this->eventService->createEvent($request->validated(), $request->user());
             return $this->successResponse($event, 'Event registered successfully.', 201);
         } catch (\Throwable $e) {
-
-            Log::error('EventController@store Error:', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return $this->errorResponse(
-                'Something went wrong.',
-                ['error' => [$e->getMessage()]],
-                500
-            );
+            Log::error('EventController@store Error:', ['error' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage(), [], $e->getCode() ?: 500);
         }
     }
 
-    // api/events/{{event}} POST
-    public function show($event)
+    public function show($eventId)
     {
-
         try {
-            $getEvent = Event::find($event);
+            $event = $this->eventService->getEvent($eventId);
 
-            if (!$getEvent) {
-                return $this->errorResponse(
-                    'No event found.',
-                    ['Event' => ['No matching events found.']],
-                    403
-                );
+            if (!$event) {
+                return $this->errorResponse('No event found.', ['Event' => ['No matching events found.']], 404);
             }
 
-            return $this->successResponse($getEvent, 'Event listed successfully.');
+            return $this->successResponse($event, 'Event listed successfully.');
         } catch (\Throwable $e) {
-
-            Log::error('EventController@store Error:', [
-                'error' => $e->getMessage(),
-                'event_id' => $event,
-            ]);
-
-            return $this->errorResponse(
-                'Something went wrong.',
-                ['error' => [$e->getMessage()]],
-                500
-            );
+            Log::error('EventController@show Error:', ['error' => $e->getMessage(), 'event_id' => $eventId]);
+            return $this->errorResponse('Something went wrong.', ['error' => [$e->getMessage()]], 500);
         }
     }
 
-    public function update(EventRequest $request, $event)
+    public function update(EventRequest $request, $eventId)
     {
-
         try {
-            $getEvent = Event::find($event);
-            if (!$getEvent) {
-                return $this->errorResponse(
-                    'No event found.',
-                    ['Event' => ['No matching events found.']],
-                    403
-                );
-            }
-
-            $validatedData = $request->validated();
-            $validatedData['start_time'] = Carbon::parse($request->start_time)->toDateTimeString();
-            $validatedData['end_time'] = Carbon::parse($request->end_time)->toDateTimeString();
-
-            if (Event::hasTimeConflict(
-                $validatedData['location'],
-                $validatedData['start_time'],
-                $validatedData['end_time'],
-                $getEvent->id
-            )) {
-                return $this->errorResponse('Another event already exists at this location and time.', 422);
-            }
-
-            $getEvent->update($validatedData);
-
+            $event = $this->eventService->updateEvent($eventId, $request->validated());
             return $this->successResponse($event, 'Event updated successfully.');
         } catch (\Throwable $e) {
-
-            Log::error('EventController@store Error:', [
-                'error' => $e->getMessage(),
-                'event_id' => $event,
-            ]);
-
-            return $this->errorResponse(
-                'Something went wrong.',
-                ['error' => [$e->getMessage()]],
-                500
-            );
+            Log::error('EventController@update Error:', ['error' => $e->getMessage(), 'event_id' => $eventId]);
+            return $this->errorResponse($e->getMessage(), [], $e->getCode() ?: 500);
         }
     }
 
-    public function destroy($event)
+    public function destroy($eventId)
     {
         try {
-            $getEvent = Event::find($event);
-            if (!$getEvent) {
-                return $this->errorResponse(
-                    'No event found.',
-                    ['Event' => ['No matching events found.']],
-                    403
-                );
-            }
-            $getEvent->delete();
+            $this->eventService->deleteEvent($eventId);
             return $this->successResponse("Event", 'Event deleted.');
         } catch (\Throwable $e) {
-
-            Log::error('EventController@destroy Error:', [
-                'error' => $e->getMessage(),
-                'event_id' => $event,
-            ]);
-
-            return $this->errorResponse(
-                'Something went wrong.',
-                ['error' => [$e->getMessage()]],
-                500
-            );
+            Log::error('EventController@destroy Error:', ['error' => $e->getMessage(), 'event_id' => $eventId]);
+            return $this->errorResponse($e->getMessage(), [], $e->getCode() ?: 500);
         }
     }
 }

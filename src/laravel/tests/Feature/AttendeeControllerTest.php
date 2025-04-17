@@ -66,7 +66,7 @@ class AttendeeControllerTest extends TestCase
         Attendee::factory()->count(2)->create(['event_id' => $event->id]);
 
         $response = $this->getJson("/api/events/{$event->id}/attendees");
-        $response->assertStatus(201)
+        $response->assertStatus(200)
                  ->assertJsonStructure(['data']);
     }
 
