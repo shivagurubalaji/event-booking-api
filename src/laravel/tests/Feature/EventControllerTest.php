@@ -21,6 +21,7 @@ class EventControllerTest extends TestCase
 
     public function test_can_list_events()
     {
+        $user = $this->authenticate();
         Event::factory()->count(3)->create();
 
         $response = $this->getJson('/api/events');
@@ -51,6 +52,7 @@ class EventControllerTest extends TestCase
 
     public function test_show_event_successfully()
     {
+        $user = $this->authenticate();
         $event = Event::factory()->create();
 
         $response = $this->getJson("/api/events/{$event->id}");
