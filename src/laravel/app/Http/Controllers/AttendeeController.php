@@ -92,7 +92,7 @@ class AttendeeController extends Controller
         }
     }
 
-    public function show($attendee)
+    public function show($event, $attendee)
     {
         try {
             //return response()->json($attendee);
