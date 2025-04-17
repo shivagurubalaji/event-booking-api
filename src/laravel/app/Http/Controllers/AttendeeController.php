@@ -156,7 +156,7 @@ class AttendeeController extends Controller
         }
     }
 
-    public function destroy($attendee)
+    public function destroy($event, $attendee)
     {
         try {
             $getAttendee = Attendee::find($attendee);
